@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import it.polito.tdp.crimes.model.Adiacenza;
 import it.polito.tdp.crimes.model.Event;
 
 
@@ -41,6 +43,84 @@ public class EventsDao {
 				} catch (Throwable t) {
 					t.printStackTrace();
 					System.out.println(res.getInt("id"));
+				}
+			}
+			
+			conn.close();
+			return list ;
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null ;
+		}
+	}
+	
+	public List<String> getVertici(String cat, int mese){
+		String sql = "SELECT distinct offense_type_id "
+				+ "FROM EVENTS "
+				+ "WHERE offense_category_id = ? "
+				+ "AND MONTH(reported_date) = ?" ;
+		try {
+			Connection conn = DBConnect.getConnection() ;
+
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			
+			List<String> list = new ArrayList<>() ;
+			
+			st.setString(1, cat);
+			st.setInt(2, mese);
+			
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+				try {
+					list.add(res.getString("offense_type_id"));
+				} catch (SQLException t) {
+					t.printStackTrace();
+					return null;
+				}
+			}
+			
+			conn.close();
+			return list ;
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null ;
+		}
+	}
+	
+	public List<Adiacenza> getArchi(String cat, int mese){
+		String sql = "SELECT e1.offense_type_id AS ee, e2.offense_type_id AS eee, COUNT(distinct e1.neighborhood_id) AS peso "
+				+ "FROM EVENTS e1, EVENTS e2 "
+				+ "WHERE e1.offense_type_id > e2.offense_type_id "
+				+ "AND e1.offense_category_id = ? AND e2.offense_category_id = e1.offense_category_id "
+				+ "AND MONTH(e1.reported_date) = ? AND MONTH(e1.reported_date)=MONTH(e2.reported_date) "
+				+ "AND e1.neighborhood_id = e2.neighborhood_id "
+				+ "GROUP BY e1.offense_type_id, e2.offense_type_id" ;
+		try {
+			Connection conn = DBConnect.getConnection() ;
+
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			
+			List<Adiacenza> list = new ArrayList<>() ;
+			
+			st.setString(1, cat);
+			st.setInt(2, mese);
+			
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+				try {
+					list.add(new Adiacenza(
+							res.getString("ee"),
+							res.getString("eee"),
+							res.getInt("peso")));
+				} catch (SQLException t) {
+					t.printStackTrace();
+					return null;
 				}
 			}
 			
